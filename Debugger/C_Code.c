@@ -329,7 +329,7 @@ void GfxViewerInit(DebuggerProc * proc);
 void GfxViewerLoop(DebuggerProc * proc);
 void AnimViewerInit(DebuggerProc * proc);
 void AnimViewerLoop(DebuggerProc * proc);
-static void EndDebuggerBanimPreview(void);
+void EndDebuggerBanimPreview(void);
 void ClearSomeGfx(DebuggerProc * proc);
 u8 CanActiveUnitPromote(void);
 
@@ -7147,14 +7147,15 @@ static const char gfxViewerOpts[7][16] = { "Portrait", "Class Sprites", "BG", "C
 #define GfxViewerMaxWeaponItem ITEM_GOLDGEM
 
 static bool HasDebuggerBanimForClass(int classId);
-static int GetDebuggerDefaultPreviewWeapon(int classId);
+int GetDebuggerDefaultPreviewWeapon(int classId);
 static int GetNextDebuggerPreviewWeapon(int item, int direction);
 static const char * GetDebuggerPreviewWeaponName(int item);
 static int GetNextDebuggerClassPaletteCycle(int classId, int current, int direction);
 static int ResolveDebuggerClassPaletteOverride(DebuggerProc * proc);
 // palOverride is an index into character_battle_animation_palette_table (see the "Pal"
 // option, GetNthDebuggerClassPaletteIndex below), or -1 to use entry->paletteId as normal.
-static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon, int palOverride);
+void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon, int palOverride);
+void EndDebuggerBanimPreview(void);
 
 // Was: shifted right & narrowed vs. the generic support-list geometry
 // (NUMBER_X/START_X/SupportWidth) to leave room on the left for the mms row shown by
@@ -7802,6 +7803,10 @@ struct OpInfoClassDisplayProc
     bool useRanged;
     s16 weapon;
     s16 naturalSpellId;
+    // Resolved SRR gCharPal override for this preview (NULL = none). Kept here rather
+    // than recomputed because it has to be re-applied after every reel restart - see
+    // ApplyDebuggerCharPalToPalette().
+    const u16 * charPalOverride;
 };
 
 extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe8.s
@@ -8295,7 +8300,7 @@ static int ResolveDebuggerClassPaletteOverride(DebuggerProc * proc)
     return ((u32)state < GetDebuggerPaletteTableCount()) ? state : -1;
 }
 
-static int GetDebuggerDefaultPreviewWeapon(int classId)
+int GetDebuggerDefaultPreviewWeapon(int classId)
 {
     const struct ClassData * class = GetClassData(classId);
 
@@ -8673,12 +8678,103 @@ static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * pro
     proc->useRanged = !proc->useRanged;
 }
 
+/**
+ * SRR-specific character palette override (gCharPal, populated by Vesly's buildfile
+ * system). Guarded by VeslyBuildfile_Link for the same reason GetUniqueCharPal()
+ * (C_code.c) is - this file gets reused across projects that may not link gCharPal in
+ * at all - so in a build without it, or with no override set for this unit, this is a
+ * no-op and the normal charPalId-driven load (see palOverride/gOpInfoData.charPalId
+ * above) is exactly what's shown, unchanged.
+ *
+ * Called from SetupDebuggerBanimAnim, BEFORE NewDebuggerEkrUnitMainMini() - unlike a
+ * real battle (ApplyBanimUniquePalette, hooked into UpdateBanimFrame), this mini-anim
+ * preview path (RestartMainMiniAnim) never calls that hook, and loads gBanimPaletteLeft
+ * exactly once, right there - patching it afterward (e.g. every frame from the caller)
+ * is always too late to matter, so this has to run inline as part of setup instead.
+ */
+extern const int VeslyBuildfile_Link;
+extern u16 gCharPalOverride[0x46];
+
+// The real (buffered, promotion-chain-aware - including SRR's cross-game fallback
+// search, GetPromotedClass()/SearchForUnpromotedClass()) match/scan lives in C_code.c.
+// This used to be a separate mirror scan duplicated in this file, but that copy's class
+// matching didn't handle the same promotion edge cases SRR's does, so its resolved index
+// could silently disagree with what C_code.c's UI (which decides what index gets saved
+// into gCharPalOverride) was counting - scrolling would update the saved override, but
+// this file's own narrower match set couldn't resolve most of those indices, so nothing
+// visibly changed. Calling the one real implementation directly removes that whole class
+// of bug by construction - the "no gCharPal linked" portability concern this used to be
+// mirrored for doesn't actually hold up, either: gCharPalOverride/GetNthCharPalForClassID
+// need to be real linked symbols for this file to even reference them, same as gCharPal
+// itself always did.
+extern const u16 * GetNthCharPalForClassID(int classID, int index);
+
+// charID (from unit->pCharacterData) is only used to look up which override index this
+// slot has saved - classID (the class actually being previewed, e.g. entry->classId in
+// SetupDebuggerBanimAnim) is what that index is resolved against, since a saved override
+// can outlive the character's class changing/promoting. NULL = no override in effect.
+static const u16 * GetDebuggerCharPalOverride(struct Unit * unit, int classID)
+{
+    int charID;
+    u16 override;
+
+    if (!VeslyBuildfile_Link || unit == NULL || unit->pCharacterData == NULL)
+        return NULL;
+
+    charID = unit->pCharacterData->number;
+    if (charID <= 0 || charID >= 0x46)
+        return NULL;
+
+    override = gCharPalOverride[charID];
+    if (!override)
+        return NULL;
+
+    return GetNthCharPalForClassID(classID, override - 1);
+}
+
+/**
+ * Pushes the override straight into the palette slot the mini anim renders from.
+ *
+ * Writing gBanimPaletteLeft (gOpInfoData.unk_20) is NOT enough and never was - that is
+ * only a staging buffer. Per banim-ekrmainmini.c, both InitMainMiniAnim() and
+ * RestartMainMiniAnim() do:
+ *
+ *     LZ77UnCompWram(banim_data[animId].pal, unk_20);              // clobbers staging
+ *     if (charPalId != -1) LZ77UnCompWram(charaPal[charPalId].pal, unk_20);
+ *     CpuFastCopy(unk_20 + genericPalId * 0x20,
+ *                 oam2Pal * 0x10 + gPaletteBuffer + 0x100, 0x20);  // the only upload
+ *     EnablePaletteSync();
+ *
+ * so a write before that decompress is overwritten, and a write after it is never read
+ * again (nothing re-uploads staging on its own). This mirrors that final CpuFastCopy
+ * instead: ApplyPalette(src, palId) is CopyToPaletteBuffer(src, 0x20 * palId, 0x20),
+ * and OBJ palettes start at slot 0x10, so 0x10 + oam2Pal lands on exactly the same
+ * bytes as "oam2Pal * 0x10 + gPaletteBuffer + 0x100" above, sync flag included.
+ *
+ * Must be re-run after every ClassInfoDisplay_ExecScript(): most class-reel opcodes call
+ * RestartMainMiniAnim(), which redoes the whole sequence above and puts the class's
+ * default colours back.
+ */
+static void ApplyDebuggerCharPalToPalette(const u16 * pal)
+{
+    if (pal == NULL)
+        return;
+
+    // Keep staging coherent too, for anything that reads it without re-decompressing.
+    const u32 * pal32 = (const u32 *)pal;
+    u32 * buf = (u32 *)((u8 *)gOpInfoData.unk_20 + gOpInfoData.genericPalId * 0x20);
+    for (int i = 0; i < 8; ++i)
+        buf[i] = pal32[i];
+
+    ApplyPalette(pal, 0x10 + gOpInfoData.oam2Pal);
+}
+
 // entry is only read here, for this one call - persistentEntry is what
 // proc->classReelEnt keeps for later script resets, and is NULL for a
 // fallback/custom-class entry (whose backing storage is the caller's stack).
 static void SetupDebuggerBanimAnim(
     struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry,
-    int weapon, int palOverride)
+    struct Unit * unit, int weapon, int palOverride)
 {
     NewEfxAnimeDrvProc();
 
@@ -8723,8 +8819,14 @@ static void SetupDebuggerBanimAnim(
     proc->weapon = weapon;
     proc->naturalSpellId = GetDebuggerSpellAnimId(entry->classId, weapon);
 
+    proc->charPalOverride = GetDebuggerCharPalOverride(unit, entry->classId);
+
     ResetClassReelSpell();
     NewDebuggerEkrUnitMainMini(&gOpInfoData);
+    // AFTER NewDebuggerEkrUnitMainMini: it calls InitMainMiniAnim, which decompresses the
+    // class's default palette over the staging buffer and uploads it. Applying before that
+    // would just be overwritten.
+    ApplyDebuggerCharPalToPalette(proc->charPalOverride);
     SetDebuggerBanimLayer(0);
 
     gUnk_Opinfo_0.unk00 = DEBUGGER_BANIM_TERRAIN; // terrain_l
@@ -8754,12 +8856,12 @@ static void SetupDebuggerBanimAnim(
     DebuggerBanimPreview_ResetScript(proc);
 }
 
-static void EndDebuggerBanimPreview(void)
+void EndDebuggerBanimPreview(void)
 {
     Proc_EndEach(sProc_DebuggerBanimPreview);
 }
 
-static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon, int palOverride)
+void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon, int palOverride)
 {
     struct OpInfoClassDisplayProc * proc;
     struct ClassReelEnt * vanillaEntry;
@@ -8789,12 +8891,16 @@ static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapo
 
     BMapDispSuspend();
     proc = Proc_Start(sProc_DebuggerBanimPreview, PROC_TREE_3);
-    SetupDebuggerBanimAnim(proc, entry, vanillaEntry, weapon, palOverride);
+    SetupDebuggerBanimAnim(proc, entry, vanillaEntry, unit, weapon, palOverride);
 }
 
 static void DebuggerBanimPreview_ExecScript(struct OpInfoClassDisplayProc * proc)
 {
     ClassInfoDisplay_ExecScript(proc);
+    // Most class-reel opcodes restart the round via RestartMainMiniAnim(), which reloads
+    // and re-uploads the class's default palette - so the override has to go back on here,
+    // every cycle, not just once at setup.
+    ApplyDebuggerCharPalToPalette(proc->charPalOverride);
     SetDebuggerBanimLayer(0);
 }
 

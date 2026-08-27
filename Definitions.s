@@ -18,6 +18,18 @@
 
 
 
+.if FE8 == true 
+@ gCharPalOverride is ALSO defined in Debugger/Definitions.s (that project resolves its
+@ own symbols) - the two MUST stay identical. SRR's revise-palette screen writes it and
+@ Debugger/C_Code.c's ApplyDebuggerCharPalOverride reads it back; if they drift, the read
+@ side just sees 0 and silently shows the default palette with no error anywhere.
+SET_DATA gCharPalOverride, 0x20287c0
+SET_DATA sCharPalOptionsBuffer, 0x20288c0 @ 128 pointers, 0x200 bytes -> ends 0x2028ac0
+SET_DATA sCharPalOptionsCount, 0x2028ac0
+SET_DATA sCharPalOptionsClassID, 0x2028ac4
+SET_DATA sCharPalOptionsBuilt, 0x2028ac8
+@; SET_DATA sCharPalOptionsBuffer, 0x2028ec0 // END OF AVAILABLE RAM
+.endif 
 
 .if FE6 == true 
 
