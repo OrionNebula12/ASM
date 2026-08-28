@@ -20,15 +20,15 @@
 	.set    \name, \value
 .endm
 
-.if FE8 == true
-@ MUST match ../Definitions.s exactly - this is shared RAM, written by SRR's revise-palette
-@ screen (C_code.c) and read back here by ApplyDebuggerCharPalOverride. The two builds each
-@ resolve this symbol from their OWN Definitions.s, so if these drift apart this file reads
-@ a different address, always sees 0, and silently falls back to the default palette.
-SET_DATA gCharPalOverride, 0x20287c0
-.endif
+@ gCharPalOverride USED to need a SET_DATA here matching ../Definitions.s exactly - the two
+@ drifted once already and silently broke palette overrides with no error anywhere. Fixed
+@ properly now: this project calls GetCharPalOverride()/ResolveCharPalOverride()/
+@ GetAdjustedCharID()/GetAdjustedCharTableID() (all in SRR's C_code.c) instead of touching
+@ the array directly, so there is only one address to ever get wrong, in SRR's own
+@ Definitions.s. See Installer.event for the #ifndef VeslyBuildfile stubs that keep this
+@ project linkable without those four SRR-only symbols.
 
-.if FE8 == true 
+.if FE8 == true
 SET_DATA character_battle_animation_palette_table_pointer, 0x8059bfc 
 SET_FUNC InitMainMiniAnim, 0x805a60D
 SET_FUNC EkrMainMini_AnimUpdateFrameGfx, 0x805A5A9

@@ -240,12 +240,30 @@ MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemD
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
 
 
-#ifndef VeslyBuildfile 
+#ifndef VeslyBuildfile
 #ifndef POKEMBLEM
 SkillDebugCommand_OnSelect:
-SHORT $4770 // bx lr 
-#endif 
-#endif 
+SHORT $4770 // bx lr
+#endif
+#endif
+
+// gCharPal palette overrides (see ApplyDebuggerCharPalOverride in C_Code.c) are SRR's -
+// GetCharPalOverride/ResolveCharPalOverride/GetAdjustedCharID/GetAdjustedCharTableID only
+// exist in a build that links VeslyBuildfile's gCharPal data in. Without it, stub all four
+// out to "return 0" (no override / no match), same as SkillDebugCommand_OnSelect above.
+// GetAdjustedCharTableID's real "nothing to look up" value is -1, not 0, but that doesn't
+// matter here: ResolveCharPalOverride is stubbed right alongside it and never looks at its
+// tableID argument in this build either.
+#ifndef VeslyBuildfile
+GetCharPalOverride:
+SHORT $2000 $4770 // movs r0, #0; bx lr
+ResolveCharPalOverride:
+SHORT $2000 $4770 // movs r0, #0; bx lr
+GetAdjustedCharID:
+SHORT $2000 $4770 // movs r0, #0; bx lr
+GetAdjustedCharTableID:
+SHORT $2000 $4770 // movs r0, #0; bx lr
+#endif
 
 
 PickupText:

@@ -8693,21 +8693,35 @@ static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * pro
  * is always too late to matter, so this has to run inline as part of setup instead.
  */
 extern const int VeslyBuildfile_Link;
-extern u16 gCharPalOverride[0x46];
 
-// The real (buffered, promotion-chain-aware - including SRR's cross-game fallback
-// search, GetPromotedClass()/SearchForUnpromotedClass()) match/scan lives in C_code.c.
-// This used to be a separate mirror scan duplicated in this file, but that copy's class
-// matching didn't handle the same promotion edge cases SRR's does, so its resolved index
-// could silently disagree with what C_code.c's UI (which decides what index gets saved
-// into gCharPalOverride) was counting - scrolling would update the saved override, but
-// this file's own narrower match set couldn't resolve most of those indices, so nothing
-// visibly changed. Calling the one real implementation directly removes that whole class
-// of bug by construction - the "no gCharPal linked" portability concern this used to be
-// mirrored for doesn't actually hold up, either: gCharPalOverride/GetNthCharPalForClassID
-// need to be real linked symbols for this file to even reference them, same as gCharPal
-// itself always did.
-extern const u16 * GetNthCharPalForClassID(int classID, int index);
+// The real gCharPalOverride array (and its buffered, promotion-chain-aware scan -
+// including SRR's cross-game fallback search, GetPromotedClass()/SearchForUnpromoted
+// Class()) both live in C_code.c. This file only ever calls the getter/scan function,
+// never the array directly, so gCharPalOverride's storage needs exactly one SET_DATA (in
+// SRR's own Definitions.s) instead of a second copy in this project's Definitions.s that
+// has to be kept byte-for-byte in sync - see the "gCharPalOverride is ALSO defined in..."
+// incident this replaces, where the two drifted and the read side silently saw 0.
+//
+// All four are genuinely optional at BUILD time too, same as SkillDebugCommand_OnSelect
+// elsewhere in this file: a project using this Debugger without VeslyBuildfile has none of
+// these to link against at all, so Installer.event stubs all four out (#ifndef
+// VeslyBuildfile) to a plain "return 0" - see there.
+extern u16 GetCharPalOverride(int charID);
+// ResolveCharPalOverride interprets a raw stored value (0/filtered-index+1/raw-index+base -
+// see its comment in C_code.c, near RawCharPalOverrideBase's #define) into an actual
+// palette. Calling it directly - instead of re-deriving that encoding here - means this
+// file and C_code.c's UI (which decides what value gets saved) can never disagree on what
+// a stored value means, the same class of bug that made the class-matching split in the
+// first place.
+extern const u16 * ResolveCharPalOverride(int classID, int adjustedCharID, int tableID, int storedValue);
+// GetAdjustedCharID/GetAdjustedCharTableID take the SAME origCharID as GetCharPalOverride,
+// but return something DIFFERENT - the character/table this slot's palettes were actually
+// registered under, which is what ResolveCharPalOverride's filtered tier 1 (this exact
+// character's own few palettes, checked before falling back to every other class match)
+// needs. See the comment on GetUniqueCharPal()'s override lookup (C_code.c) for why these
+// have to differ from GetCharPalOverride's own charID.
+extern int GetAdjustedCharID(int origCharID);
+extern int GetAdjustedCharTableID(int origCharID);
 
 // charID (from unit->pCharacterData) is only used to look up which override index this
 // slot has saved - classID (the class actually being previewed, e.g. entry->classId in
@@ -8722,14 +8736,11 @@ static const u16 * GetDebuggerCharPalOverride(struct Unit * unit, int classID)
         return NULL;
 
     charID = unit->pCharacterData->number;
-    if (charID <= 0 || charID >= 0x46)
-        return NULL;
-
-    override = gCharPalOverride[charID];
+    override = GetCharPalOverride(charID);
     if (!override)
         return NULL;
 
-    return GetNthCharPalForClassID(classID, override - 1);
+    return ResolveCharPalOverride(classID, GetAdjustedCharID(charID), GetAdjustedCharTableID(charID), override);
 }
 
 /**
