@@ -3923,6 +3923,14 @@ void PhaseIntroInitText(struct PhaseIntroSubProc * proc)
 
 void StartMapSongBgm(void)
 {
+#ifdef VeslyBuildfile
+    // Failsafe: clear vanilla battle-effect procs
+    Proc_EndEach(ProcScr_eobjLvup);
+    Proc_EndEach(ProcScr_ekrsubAnimeEmulator);
+    Proc_EndEach(ProcScr_EfxPartsofScroll);
+    Proc_EndEach(ProcScr_ekrBaseAppear);
+#endif
+
     int override = GetDebuggerBgmOverride();
     if (override)
     {

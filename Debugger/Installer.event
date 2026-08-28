@@ -263,6 +263,9 @@ GetAdjustedCharID:
 SHORT $2000 $4770 // movs r0, #0; bx lr
 GetAdjustedCharTableID:
 SHORT $2000 $4770 // movs r0, #0; bx lr
+ALIGN 4 
+VeslyBuildfile_Link:
+WORD 0 
 #endif
 
 
