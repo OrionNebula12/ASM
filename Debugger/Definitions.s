@@ -29,6 +29,8 @@
 @ project linkable without those four SRR-only symbols.
 
 .if FE8 == true
+
+SET_DATA sProc_BMVSync, 0x859d8b8
 SET_DATA character_battle_animation_palette_table_pointer, 0x8059bfc 
 SET_FUNC InitMainMiniAnim, 0x805a60D
 SET_FUNC EkrMainMini_AnimUpdateFrameGfx, 0x805A5A9

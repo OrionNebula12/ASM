@@ -3920,16 +3920,44 @@ void PhaseIntroInitText(struct PhaseIntroSubProc * proc)
 
     proc->timer = 15;
 }
+extern const int VeslyBuildfile_Link;
+extern struct ProcCmd sProc_BMVSync[];
+void ClearVanillaBattleEffectProcs(void)
+{
+    if (VeslyBuildfile_Link)
+    {
+        // Failsafe: clear vanilla battle-effect procs
+        Proc_EndEach(ProcScr_ekrsubAnimeEmulator); // 8758a30
+        Proc_EndEach(ProcScr_eobjLvup);
+        Proc_EndEach(ProcScr_EfxPartsofScroll);
+        Proc_EndEach(ProcScr_ekrBaseAppear);
+        Proc_EndEach(sProc_BMVSync);
+    }
+}
+
+void PromoMain_HandlePrepEndEffect(struct ProcPromoMain * proc)
+{
+    ClearVanillaBattleEffectProcs();
+    struct ProcPromoHandler * parent = proc->proc_parent;
+    switch (parent->bmtype)
+    {
+        case PROMO_HANDLER_TYPE_TRANINEE:
+        case PROMO_HANDLER_TYPE_BM:
+            break;
+
+        case PROMO_HANDLER_TYPE_PREP:
+            BMapDispResume();
+            RefreshUnitSprites();
+            ApplyUnitSpritePalettes();
+            ForceSyncUnitSpriteSheet();
+            InitSystemTextFont();
+            break;
+    }
+}
 
 void StartMapSongBgm(void)
 {
-#ifdef VeslyBuildfile
-    // Failsafe: clear vanilla battle-effect procs
-    Proc_EndEach(ProcScr_eobjLvup);
-    Proc_EndEach(ProcScr_ekrsubAnimeEmulator);
-    Proc_EndEach(ProcScr_EfxPartsofScroll);
-    Proc_EndEach(ProcScr_ekrBaseAppear);
-#endif
+    ClearVanillaBattleEffectProcs();
 
     int override = GetDebuggerBgmOverride();
     if (override)
@@ -8700,7 +8728,6 @@ static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * pro
  * exactly once, right there - patching it afterward (e.g. every frame from the caller)
  * is always too late to matter, so this has to run inline as part of setup instead.
  */
-extern const int VeslyBuildfile_Link;
 
 // The real gCharPalOverride array (and its buffered, promotion-chain-aware scan -
 // including SRR's cross-game fallback search, GetPromotedClass()/SearchForUnpromoted
