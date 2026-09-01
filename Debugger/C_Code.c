@@ -3931,7 +3931,7 @@ void ClearVanillaBattleEffectProcs(void)
         Proc_EndEach(ProcScr_eobjLvup);
         Proc_EndEach(ProcScr_EfxPartsofScroll);
         Proc_EndEach(ProcScr_ekrBaseAppear);
-        Proc_EndEach(sProc_BMVSync);
+        // Proc_EndEach(sProc_BMVSync); // this is required for SMS updating, so don't remove it
     }
 }
 
