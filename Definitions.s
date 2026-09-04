@@ -21,6 +21,8 @@
 .if FE8 == true
 @ Sole definition - Debugger/C_Code.c reads this through GetCharPalOverride() (C_code.c)
 @ rather than a second SET_DATA of its own now, so there's no address to keep in sync.
+
+@@ 0x2026Ec0
 SET_DATA sCharPalOptionsBuilt, 0x20287bc
 SET_DATA gCharPalOverride, 0x20287c0
 SET_DATA sCharPalOptionsBuffer, 0x20288c0 @ 128 pointers, 0x200 bytes -> ends 0x2028ac0
@@ -49,7 +51,10 @@ sub r2, #1
 mov r0, r2 
 bx lr 
 
-
+@SET_FUNC __aeabi_idiv,    __divsi3
+@SET_FUNC __aeabi_idivmod, __modsi3
+@SET_FUNC Div1, __divsi3
+@SET_FUNC Mod, __modsi3
 
 SET_DATA gSound, 0x202AA65 
 SET_FUNC GetPidStats, 0x8084F4D
@@ -321,7 +326,7 @@ SET_DATA gPal_HelpTextBox, 0x8100a48
 
 .endif     
 .if FE7 == true 
- 
+
 SET_FUNC Text_GetCursor, 0x8005571 
 SET_FUNC Text_DrawCharacterAscii, 0x8005B9D
 SET_FUNC InitSpriteTextFont, 0x8005C39

@@ -1,12 +1,37 @@
 
-#include "EndBattleIfBroken.lyn.event" 
-#include "C_Code.lyn.event" 
+#ifdef _FE8_
+#include "Data/FE8.lyn.event"
+#endif
+#ifdef _FE7_
+#include "Data/FE7.lyn.event"
+#endif
+#ifdef _FE6_
+#include "Data/FE6.lyn.event"
+#endif
 
-ALIGN 4 
+#include "EndBattleIfBroken.lyn.event"
+
+ALIGN 4
 MaxNumberOfFrames:
 WORD 900
 
-PUSH 
+#ifndef jumpToHack
+	#define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+#endif
+
+// The hook replaces the two instructions at UpdateBanimFrame+0x18 (FE8 UpdateBanimFrame
+// is 0x80599E8, so 0x8059A00), and CallStartEndBrokenBattleProc replays them before
+// returning to 0x8059A08. FE6/FE7 need the equivalent point in their own copy of that
+// function - see the notes in EndBattleIfBroken.asm for what has to be replayed.
+PUSH
+#ifdef _FE8_
 ORG 0x59A00
 jumpToHack(CallStartEndBrokenBattleProc)
-POP 
+#endif
+#ifdef _FE7_
+// TODO: FE7 UpdateBanimFrame hook offset not found yet
+#endif
+#ifdef _FE6_
+// TODO: FE6 UpdateBanimFrame hook offset not found yet
+#endif
+POP

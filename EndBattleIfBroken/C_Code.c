@@ -4,8 +4,11 @@
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
 extern const struct ProcCmd gProcScr_Talk[];
-extern const struct ProcCmd* gProcScr_efxHPBar; 
-extern const struct ProcCmd* gProcScr_efxHPBarResire; 
+// arrays, not pointers: FE8 used to define these as ROM words that happen to hold the
+// script address, but FE6/FE7 have no such word, so Definitions.s points every game
+// straight at the script instead.
+extern const struct ProcCmd gProcScr_efxHPBar[];
+extern const struct ProcCmd gProcScr_efxHPBarResire[];
 
 extern int MaxNumberOfFrames;
 
