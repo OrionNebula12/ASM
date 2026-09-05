@@ -19,6 +19,52 @@ extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
 extern u8 const UnitOverrideReclassTable_Promoted[][7];
 // extern u8* pPromoJidLut;
 
+void SetTalkLines(int lines);
+
+// make class descriptions max 2 lines on promo/reclass screen.
+#define TEXT_CHAR_NEWLINE 0x01
+static void TruncateAfterSecondLF(char * str)
+{
+    int lfCount = 0;
+
+    while (*str)
+    {
+        if (*str == TEXT_CHAR_NEWLINE)
+        {
+            ++lfCount;
+
+            if (lfCount == 2)
+            {
+                *str = 0;
+                return;
+            }
+        }
+
+        ++str;
+    }
+}
+
+ProcPtr StartTalkMsgClassDesc(int x, int y, int msgId)
+{
+    char * buffer = GetStringFromIndex(msgId);
+    TruncateAfterSecondLF(buffer);
+    return StartTalkExt(x, y, buffer, NULL);
+}
+void ChangeClassDescription(u32 msg)
+{
+    SetInitTalkTextFont();
+    ClearTalkText();
+    StartTalkMsgClassDesc(2, 0xF, msg);
+
+    SetTalkPrintColor(0);
+    SetTalkFlag(TALK_FLAG_INSTANTSHIFT);
+    SetTalkFlag(TALK_FLAG_NOBUBBLE);
+    SetTalkFlag(TALK_FLAG_NOSKIP);
+    SetTalkFlag(TALK_FLAG_NOFAST);
+    SetTalkFlag(TALK_FLAG_SILENT);
+    SetTalkPrintDelay(4);
+}
+
 int GetReclassTableID(const u8 * table, int size, int classID)
 {
     for (int i = 0; i < size; ++i)
@@ -508,13 +554,15 @@ void SilentReclassUnit_ASMC()
     {
         return;
     }
-    u8 classID = gEventSlots[3]; 
-    if (!classID) { 
-    classID = GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
-    } 
-    if (classID) { 
-    ApplyUnitReclass(unit, classID);
-    } 
+    u8 classID = gEventSlots[3];
+    if (!classID)
+    {
+        classID = GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
+    }
+    if (classID)
+    {
+        ApplyUnitReclass(unit, classID);
+    }
 }
 
 int CanClassEquipWeapon(int weapon, int reclassID)
