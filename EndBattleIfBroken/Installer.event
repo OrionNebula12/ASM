@@ -28,18 +28,20 @@ WORD 900
     #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
 #endif 
 
-// NewEkrBattleDeamon runs once when a battle animation starts. The stub replays the
-// four prologue instructions it displaces - see EndBattleIfBroken.asm.
+// FE8 hooks UpdateBanimFrame at 0x8059A00, unchanged from before - it works, so it is
+// left alone. FE6/FE7 hook NewEkrBattleDeamon 4 bytes in, where callHackNew's 12 bytes
+// land exactly on ldr/movs/bl/str/ldr and r4 is already loaded. See AsmHooks.asm.
 PUSH
 #ifdef _FE8_
-ORG 0x4FD60
+ORG 0x59A00
+jumpToHack(CallStartEndBrokenBattleProc)
 #endif
 #ifdef _FE7_
 ORG 0x4B1B0
-callHackNew(CallStartEndBrokenBattleProcFE7)
+callHackNew(CallStartEndBrokenBattleProc)
 #endif
 #ifdef _FE6_
-ORG 0x42584
+ORG 0x42588
+callHackNew(CallStartEndBrokenBattleProc)
 #endif
-// jumpToHack(CallStartEndBrokenBattleProc)
 POP
