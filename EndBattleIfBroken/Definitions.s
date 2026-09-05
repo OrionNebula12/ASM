@@ -57,10 +57,29 @@ SET_FUNC Mod, __modsi3
 
 SET_FUNC Proc_Start, 0x8003a05
 SET_FUNC Proc_Find,  0x8003e7d
-SET_FUNC Proc_End,   0x8004265
+SET_FUNC Proc_End,   0x8003C29   @ corrected, see below
 
 SET_FUNC GetAnimPosition, 0x804B6C5
 SET_FUNC EndEfxStatusUnits, 0x8046E9D
+
+@ Proc_End above is NOT the 0x8004265 the shared ASM/Definitions.s uses - that address
+@ is Proc_EndEach. FE6 EndEfxStatusUnits (0x8046E9C) compiles its one Proc_End call to
+@ "bl 0x8003c28", which settles it.
+SET_FUNC Proc_EndEach, 0x8004265
+
+@ RAM, read out of literal pools rather than the library (which indexes functions only).
+@ NewEkrBattle and NewEfxHpBar load these; both pools line up slot-for-slot with FE8's,
+@ and NewEkrBattle's pool also holds InBattleMainRoutine|1, whose address the library
+@ gives independently - so the alignment is proved, not assumed.
+SET_DATA gAnims, 0x02000000                @ same in all three games
+SET_DATA gEkrBattleEndFlag, 0x0201771C
+SET_DATA gEfxHpLutOff, 0x0203CD46
+SET_DATA gpProcEfxStatusUnits, 0x02017764
+
+@ FE6 has no DeleteEach6C_efxStatusUnit - EndEfxStatusUnits (0x8046E9C) is followed
+@ straight by DisableEfxStatusUnits (0x8046ED8), 0x10 bytes tighter than FE8, which is
+@ exactly that function's size. C_Code.c has to call Proc_EndEach on this instead.
+SET_DATA ProcScr_efxStatusUnit, 0x85CBA98
 
 @ efxHPBar/Resire were found before the library, by structure: Resire sits right after
 @ efxHPBar and reuses its last two routines. The library then confirmed both tails -
@@ -77,16 +96,8 @@ SET_DATA ProcScr_efxWeaponIcon, 0x85CBAC0      @ REPEATs efxWeaponIcon_Loop 0x80
 @ (0x804F46C -> 0x804F4A0). Structural scanning independently picked the same script.
 SET_DATA ProcScr_efxHPBarColorChange, 0x85CBA50
 
-@ TODO for FE6:
-@ SET_DATA gAnims,                       @ RAM; the library indexes functions only
-@ SET_DATA gEkrBattleEndFlag,            @ RAM; likewise
-@ SET_FUNC DeleteEach6C_efxStatusUnit,   @ library maps FE8U 0x8054B54 only,
-@                                        @ "ambiguous legacy cross-game mapping rejected"
-@ SET_DATA ProcScr_PromoMain,            @ nothing in the ROM references PromoMain_InitScreen
-@                                        @ (0x8094460), so the promo screen is built differently
-@ Hook site: UpdateBanimFrame is 0x804B048, so the FE8 hook point (function + 0x18)
-@ would be 0x804B060 - but the two displaced instructions still need disassembling
-@ before EndBattleIfBroken.asm can replay them.
+@ ProcScr_PromoMain is no longer needed - C_Code.c tests gEkrDistanceType instead.
+SET_DATA gEkrDistanceType, 0x203CD14
 .endif
 
 @ ---------------------------------------------------------------- FE7U
@@ -98,10 +109,22 @@ SET_FUNC Mod, __modsi3
 
 SET_FUNC Proc_Start, 0x8004495
 SET_FUNC Proc_Find,  0x80046A9
-SET_FUNC Proc_End,   0x800486D
+SET_FUNC Proc_End,   0x8004585   @ corrected, see below
 
 SET_FUNC GetAnimPosition, 0x8054679
 SET_FUNC EndEfxStatusUnits, 0x804F795
+
+@ Same story as FE6: the shared ASM/Definitions.s gives Proc_End and Proc_EndEach the
+@ SAME address (0x800486D), and that address is Proc_EndEach. FE7U EndEfxStatusUnits
+@ (0x804F794) calls "bl 0x8004584" for its Proc_End, hence the correction above.
+SET_FUNC Proc_EndEach, 0x800486D
+
+SET_DATA gAnims, 0x02000000                @ same in all three games
+SET_DATA gEkrBattleEndFlag, 0x02017724     @ same as FE8U
+SET_DATA gEfxHpLutOff, 0x0203E05E
+SET_DATA ProcScr_efxStatusUnit, 0x8B9AF14
+
+@ FE7 has no DeleteEach6C_efxStatusUnit either.
 
 @ same story as FE6: tails confirmed as 0x804D788 EfxHpBar_MoveCameraOnEnd and
 @ 0x804D828 EfxHpBar_WaitCameraMove
@@ -113,11 +136,6 @@ SET_DATA ProcScr_EkrLevelup, 0x8BDB5FC         @ REPEATs EkrLvup_InitPalette 0x8
 SET_DATA ProcScr_efxWeaponIcon, 0x8B9AF3C      @ REPEATs efxWeaponIcon_Loop 0x804FAD4
 SET_DATA ProcScr_efxHPBarColorChange, 0x8B9AECC @ REPEATs EfxHPBarColorChangeMain 0x804F4A0
 
-@ TODO for FE7U:
-@ SET_DATA gAnims,
-@ SET_DATA gEkrBattleEndFlag,
-@ SET_FUNC DeleteEach6C_efxStatusUnit,
-@ SET_DATA ProcScr_PromoMain,
-@ Hook site: the library has no FE7 mapping for UpdateBanimFrame at all (FE7J and FE7U
-@ are both 0 in its table), so that one needs finding by hand.
+@ ProcScr_PromoMain is no longer needed - C_Code.c tests gEkrDistanceType instead.
+SET_DATA gEkrDistanceType, 0x203E02C
 .endif

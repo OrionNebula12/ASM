@@ -9,7 +9,7 @@
 #include "Data/FE6.lyn.event"
 #endif
 
-#include "EndBattleIfBroken.lyn.event"
+#include "AsmHooks.lyn.event"
 
 ALIGN 4
 MaxNumberOfFrames:
@@ -19,19 +19,17 @@ WORD 900
 	#define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
 #endif
 
-// The hook replaces the two instructions at UpdateBanimFrame+0x18 (FE8 UpdateBanimFrame
-// is 0x80599E8, so 0x8059A00), and CallStartEndBrokenBattleProc replays them before
-// returning to 0x8059A08. FE6/FE7 need the equivalent point in their own copy of that
-// function - see the notes in EndBattleIfBroken.asm for what has to be replayed.
+// NewEkrBattleDeamon runs once when a battle animation starts. The stub replays the
+// four prologue instructions it displaces - see EndBattleIfBroken.asm.
 PUSH
 #ifdef _FE8_
-ORG 0x59A00
-jumpToHack(CallStartEndBrokenBattleProc)
+ORG 0x4FD60
 #endif
 #ifdef _FE7_
-// TODO: FE7 UpdateBanimFrame hook offset not found yet
+ORG 0x4B1AC
 #endif
 #ifdef _FE6_
-// TODO: FE6 UpdateBanimFrame hook offset not found yet
+ORG 0x42584
 #endif
+jumpToHack(CallStartEndBrokenBattleProc)
 POP
