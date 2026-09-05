@@ -7,3 +7,4 @@
 .equ FE8, true 
 
 .include "../Definitions.s" 
+.include "Definitions.s"    @ this project; overrides come last

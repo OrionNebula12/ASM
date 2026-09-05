@@ -1,14 +1,6 @@
-.macro SET_FUNC name, value
-	.global \name
-	.type   \name, function
-	.set    \name, \value
-.endm
-
-.macro SET_DATA name, value
-	.global \name
-	.type   \name, object
-	.set    \name, \value
-.endm
+@ Included AFTER the shared ASM/Definitions.s (see Data/FEn_defs.s), which supplies
+@ the SET_FUNC/SET_DATA macros, fe8.s, and the Proc_* addresses. Anything re-set here
+@ deliberately overrides it - .set allows redefinition and the last one wins.
 
 @ Function addresses below come from laqieer's FE_GBA_Function_Library
 @ (https://laqieer.github.io/FE_GBA_Function_Library/), which is generated from the
@@ -26,8 +18,6 @@
 
 @ ---------------------------------------------------------------- FE8
 .if FE8 == true
-.include "fe8.s"
-
 @ division & other libgcc functions
 SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
@@ -55,8 +45,6 @@ SET_FUNC __aeabi_idivmod, __modsi3
 SET_FUNC Div, __divsi3
 SET_FUNC Mod, __modsi3
 
-SET_FUNC Proc_Start, 0x8003a05
-SET_FUNC Proc_Find,  0x8003e7d
 SET_FUNC Proc_End,   0x8003C29   @ corrected, see below
 
 SET_FUNC GetAnimPosition, 0x804B6C5
@@ -107,8 +95,6 @@ SET_FUNC __aeabi_idivmod, __modsi3
 SET_FUNC Div, __divsi3
 SET_FUNC Mod, __modsi3
 
-SET_FUNC Proc_Start, 0x8004495
-SET_FUNC Proc_Find,  0x80046A9
 SET_FUNC Proc_End,   0x8004585   @ corrected, see below
 
 SET_FUNC GetAnimPosition, 0x8054679

@@ -106,6 +106,7 @@ void LoopEndBrokenBattleProc(EndBrokenBattleProc * proc)
     {
         return;
     }
+    asm("mov r11, r11");
     proc->timer++;
     struct Anim *anim, *anim2;
     anim = gAnims[GetAnimPosition(anim) * 2];
