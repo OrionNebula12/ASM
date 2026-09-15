@@ -8902,8 +8902,14 @@ static void SetupDebuggerBanimAnim(
     DebuggerBanimPreview_ResetScript(proc);
 }
 
+static void EndLingeringBanimEffectProcs(void);
+
 void EndDebuggerBanimPreview(void)
 {
+    // Before this preview's own teardown, so the outgoing spell's effect procs
+    // are gone before the next preview reuses the anims they are still holding.
+    EndLingeringBanimEffectProcs();
+
     Proc_EndEach(sProc_DebuggerBanimPreview);
 }
 
@@ -9656,6 +9662,61 @@ static void ResetAnimViewerSubstituteAnims(void)
     }
 
     SetAnimViewerAnimsHidden(FALSE);
+}
+
+/**
+ * Stop whatever spell effect the Class Sprites preview still has in flight.
+ *
+ * The vanilla class reel never needs this: it only ever reaches a spell through
+ * StartClassReelSpellAnim(), which records gpActiveClassReelSpellProc so that
+ * EndActiveClassReelSpell() can stop it again. This preview goes through
+ * StartDebuggerBanimSpellAnimation() -> StartSpellAnimation() instead, which
+ * dispatches straight into gEkrSpellAnimLut and records no handle anywhere -
+ * and one spell is several procs (the effect itself plus its BG/OBJ/ALPHA
+ * children), so there is no single pointer to keep even if we wanted one.
+ * Sweeping them by name is the only handle we get.
+ *
+ * Without this, cycling the previewed weapon mid-spell leaves the old spell's
+ * procs running against anims the next preview is about to reuse, and they
+ * eventually AnimDelete() the new preview's anim out from under it.
+ */
+static void EndLingeringBanimEffectProcs(void)
+{
+    int i;
+
+    for (i = 0; i < AnimViewerProcCount; ++i)
+    {
+        struct Proc * it = &sProcArray[i];
+        const char * name;
+
+        /* DeleteProcessRecursive() nulls proc_script, so this skips free slots */
+        if (it->proc_script == NULL)
+            continue;
+
+        name = GetAnimViewerProcScriptName(it->proc_script);
+
+        if (name == NULL)
+            continue;
+
+        if (AnimViewerProcNameIs(name, "efx") || AnimViewerProcNameIs(name, "ekrsubAnimeEmulator"))
+            Proc_End(it);
+    }
+
+    for (i = 0; i < 2; ++i)
+    {
+        if (gEkrSubstituteAnims[i] == NULL)
+            continue;
+
+        AnimDelete(gEkrSubstituteAnims[i]);
+        gEkrSubstituteAnims[i] = NULL;
+    }
+
+    /* A proc killed mid-flight never reaches its own SpellFx_Finish() or its
+     * gEfxBgSemaphore--, so both would stay latched at whatever the interrupted
+     * spell left them. gEfxSpellAnimExists is what CR_WAIT_SPELL waits on, so
+     * leaving it set would just hang the reel instead. */
+    gEfxSpellAnimExists = 0;
+    gEfxBgSemaphore = 0;
 }
 
 // 02028f78 b sAnimPool	/home/runner/work/fireemblem8u/fireemblem8u/src/animedrv.c:14
