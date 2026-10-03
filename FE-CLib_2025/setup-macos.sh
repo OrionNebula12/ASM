@@ -305,4 +305,4 @@ echo "======================================"
 echo
 echo "You can now build with:"
 echo
-echo "  make"
+echo "  ./build.sh"
