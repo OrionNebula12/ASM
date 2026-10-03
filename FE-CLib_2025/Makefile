@@ -11,7 +11,7 @@ endif
 # Including devkitARM tool definitions
 include $(DEVKITARM)/base_tools
 # defining path of lyn
-LYN := lyn
+LYN := $(CURDIR)/tools/macos/lyn
 
 # setting up compilation flags
 ARCH   := -mcpu=arm7tdmi -mthumb -mthumb-interwork

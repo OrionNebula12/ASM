@@ -12,17 +12,27 @@ if [ -z "$DEVKITARM" ]; then
     exit 1
 fi
 
-for tool in arm-none-eabi-gcc arm-none-eabi-as lyn make; do
+LYN="$(cd "$(dirname "$0")" && pwd)/tools/macos/lyn"
+
+for tool in arm-none-eabi-gcc arm-none-eabi-as make; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "ERROR: Required tool not found: $tool"
         exit 1
     fi
 done
 
+if [ ! -x "$LYN" ]; then
+    echo "ERROR: Project-local lyn not found or not executable:"
+    echo "  $LYN"
+    echo
+    echo "Run ./setup-macos.sh first."
+    exit 1
+fi
+
 echo "DEVKITARM: $DEVKITARM"
 echo "GCC:       $(command -v arm-none-eabi-gcc)"
 echo "AS:        $(command -v arm-none-eabi-as)"
-echo "LYN:       $(command -v lyn)"
+echo "LYN:       $LYN"
 echo
 
 make C_Code.lyn.event

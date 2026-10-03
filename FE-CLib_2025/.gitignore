@@ -1,0 +1,20 @@
+# Build outputs
+C_Code.lyn.event
+C_Code.s
+C_Code.o
+Definitions.o
+
+# Generic object/assembly outputs
+*.o
+*.s~
+
+# macOS
+.DS_Store
+
+# CMake/build directories
+build/
+cmake-build-*/
+
+# Editor/IDE
+.vscode/
+.idea/
