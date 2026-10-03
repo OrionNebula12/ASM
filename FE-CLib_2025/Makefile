@@ -1,6 +1,7 @@
 
 .SUFFIXES:
 .PHONY:
+.DEFAULT_GOAL := C_Code.lyn.event
 
 # Making sure devkitARM exists and is set up.
 ifeq ($(strip $(DEVKITARM)),)
@@ -10,7 +11,7 @@ endif
 # Including devkitARM tool definitions
 include $(DEVKITARM)/base_tools
 # defining path of lyn
-LYN := "C:/devkitPro/lyn.exe"
+LYN := lyn
 
 # setting up compilation flags
 ARCH   := -mcpu=arm7tdmi -mthumb -mthumb-interwork
@@ -18,7 +19,7 @@ CFLAGS := $(ARCH) -Wall -mtune=arm7tdmi -O2 -mlong-calls
 
 # C to ASM rule
 %.s: %.c *.c
-	$(CC) $(CFLAGS) -S $< -I C:/devkitPro/FE-Clib_2025/Include -o $@ -fverbose-asm -mlong-calls
+	$(CC) $(CFLAGS) -S $< -I $(CURDIR)/include -o $@ -fverbose-asm -mlong-calls
 
 
 # OBJ to EVENT rule
