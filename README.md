@@ -34,6 +34,8 @@ This macOS setup is currently a prototype for Apple Silicon Macs. The existing W
 
 This work builds on the existing FE8U C/ASM development workflow and the original ASM project and README by Vesly.
 
+The updated FE-CLib by Mokha
+
 Special thanks to Vesly, Laqieer, StanH, and Cam.
 
 # AI Disclosure
