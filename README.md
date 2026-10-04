@@ -46,3 +46,6 @@ The final implementation and testing were performed by me.
 FE-CLib includes and uses lyn version 2.5.4 by StanHash, which is licensed under the GNU General Public License v3.0 (GPL-3.0).
 
 See the included lyn license and the original lyn repository for the applicable license and source code.
+
+# Original README (From Vesly)
+ASM hacks for FE8U that I've edited, (re)written, or collaborated on. 
