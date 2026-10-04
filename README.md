@@ -31,12 +31,19 @@ For detailed macOS installation and usage instructions, see the accompanying FE8
 This macOS setup is currently a prototype for Apple Silicon Macs. The existing Windows workflow is unchanged.
 
 # Credits
+Special thanks to Vesly, Laqieer, StanH, Mokha,and Cam.
 
 This work builds on the existing FE8U C/ASM development workflow and the original ASM project and README by Vesly.
 
-The updated FE-CLib by Mokha
+Vesly — for the original project, and permission to adapt the project for this macOS setup.
 
-Special thanks to Vesly, Laqieer, StanH, and Cam.
+Mokha — for the updated FE-CLib.
+
+Laqieer — for helping fix an Event Assembler bug and Mac version of FEBuilder.
+
+StanH — for the lyn tool used by the FE-CLib build pipeline.
+
+Cam — who conversation kick started the whole project
 
 # AI Disclosure
 
