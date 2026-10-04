@@ -1,0 +1,8 @@
+lyn version 2.5.4
+
+Copyright © StanHash and contributors.
+
+lyn is licensed under the GNU General Public License, version 3 (GPL-3.0).
+
+Source:
+https://github.com/StanHash/lyn
