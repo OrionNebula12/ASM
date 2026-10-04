@@ -22,7 +22,7 @@ The macOS pipeline has been tested end-to-end, from compiling C code and generat
 
 The project includes a project-local Apple Silicon build of lyn 2.5.4 at:
 
-tools/macos/lyn
+`tools/macos/lyn`
 
 For detailed macOS installation and usage instructions, see the accompanying FE8 C Development on macOS guide.
 
