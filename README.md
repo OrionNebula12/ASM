@@ -1,136 +1,48 @@
 # FE-CLib
 
-FE-CLib is the C development setup used for writing C code for FE8U.
+FE-CLib is a C development setup for writing C code for FE8U.
 
-# macOS setup
+# macOS Setup
 
-A macOS setup is currently available as a prototype for Apple Silicon Macs.
+A prototype macOS setup is available for Apple Silicon Macs. It provides a local FE-CLib build pipeline using devkitARM, ARM GCC, the ARM assembler, and a project-local build of lyn 2.5.4.
 
-The macOS setup provides a local build environment using:
+The setup script verifies the required tools
 
-devkitARM
+`./setup-macos.sh`
 
-ARM GCC
+Once setup is complete, build the project with:
 
-ARM assembler
+`./build.sh`
 
-lyn 2.5.4
+The build generates C_Code.lyn.event, which contains the compiled C code output.
 
-FE-CLib's C build system
+To install the code into your FE8U ROM, use Installer.event through FEBuilderGBA's Event Assembler. Installer.event handles the installation of the generated code.
 
-This setup is currently intended for development and testing on macOS with Apple Silicon.
+The macOS pipeline has been tested end-to-end, from compiling C code and generating the lyn event to installing it through FEBuilderGBA and verifying the resulting in-game behavior.
 
-Requirements
-
-You will need:
-
-macOS on Apple Silicon
-
-Xcode Command Line Tools
-
-Homebrew
-
-devkitPro with devkitARM
-
-the devkitPro GBA development tools
-
-FEBuilderGBA for inserting the generated code into a ROM
-
-Setup
-
-Open Terminal and enter the FE-CLib_2025 directory:
-
-cd FE-CLib_2025
-
-
-Run the setup script:
-
-./setup-macos.sh
-
-
-The setup script checks that the required development tools are installed and verifies the project-local lyn executable.
-
-It also performs a complete test build to make sure the C compiler, ARM assembler, and lyn pipeline are working.
-
-If setup succeeds, the macOS environment is ready to build FE-CLib C code.
-
-Building
-
-After setup, build the C code with:
-
-./build.sh
-
-
-# The build process:
-
-Compiles the C source with ARM GCC.
-
-Converts the generated assembly into an ARM object file.
-
-Links the object with the FE-CLib definitions.
-
-Runs lyn to generate the FEBuilder event output.
-
-The generated file is:
-
-C_Code.lyn.event
-
-
-The generated event is build output and can be regenerated at any time by running the build again.
-
-Installing into FEBuilderGBA
-
-The FE-CLib project also contains an Installer.event file used by the FEBuilder installation workflow.
-
-The tested workflow is:
-
-Build the C code with ./build.sh.
-
-Open the target FE8U ROM in FEBuilderGBA.
-
-Use the FE-CLib installation workflow with Installer.event.
-
-Let FEBuilder compile and insert the installer event.
-
-Test the resulting ROM.
-
-Important: C_Code.lyn.event and Installer.event have different purposes.
-
-C_Code.lyn.event is the generated output from the C build pipeline.
-
-Installer.event is the event used by the tested FEBuilder installation workflow.
-
-# Testing
-
-The macOS C pipeline has been tested by compiling a C routine, generating the corresponding lyn event, inserting the installation event through FEBuilderGBA, and testing the resulting ROM.
-
-The test confirmed that changes made to the C implementation affected the corresponding in-game behavior.
-
-Project-local lyn
-
-The macOS prototype includes its own project-local lyn executable:
+The project includes a project-local Apple Silicon build of lyn 2.5.4 at:
 
 tools/macos/lyn
 
+For detailed macOS installation and usage instructions, see the accompanying FE8 C Development on macOS guide.
 
-The bundled version is lyn 2.5.4 and is built for Apple Silicon.
+# Status
 
-The project uses this local executable instead of requiring users to install lyn separately.
+This macOS setup is currently a prototype for Apple Silicon Macs. The existing Windows workflow is unchanged.
 
-Status
+# Credits
 
-The macOS setup is currently a prototype intended for Apple Silicon Macs.
+This work builds on the existing FE8U C/ASM development workflow and the original ASM project and README by Vesly.
 
-The existing Windows workflow is unchanged.
+Special thanks to Vesly, Laqieer, StanH, and Cam.
 
-Cross-platform support can be addressed separately after the macOS setup has been further tested.
+# AI Disclosure
 
-This prototype is being developed and tested independently before being considered for wider distribution.
+AI was used extensively as a development and troubleshooting aid, primarily to help adapt the existing Windows workflow to macOS and develop and troubleshoot the macOS setup/build scripts.
 
-# AI Disclosure 
-AI had been heavily used to help make this work. 
+The final implementation and testing were performed by me.
 
-## Original README From Vesly
-# ASM
+# Licenses 
+FE-CLib includes and uses lyn version 2.5.4 by StanHash, which is licensed under the GNU General Public License v3.0 (GPL-3.0).
 
-ASM hacks for FE8U that I've edited, (re)written, or collaborated on.
+See the included lyn license and the original lyn repository for the applicable license and source code.
