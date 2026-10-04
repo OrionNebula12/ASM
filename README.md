@@ -35,15 +35,15 @@ Special thanks to Vesly, Laqieer, StanH, Mokha,and Cam.
 
 This work builds on the existing FE8U C/ASM development workflow and the original ASM project and README by Vesly.
 
-Vesly — for the original project, and permission to adapt the project for this macOS setup.
+- Vesly - for the original project, and permission to adapt the project for this macOS setup.
 
-Mokha — for the updated FE-CLib.
+- Mokha - for the updated FE-CLib.
 
-Laqieer — for helping fix an Event Assembler bug and Mac version of FEBuilder.
+- Laqieer - for helping fix an Event Assembler bug and creating a Mac version of FEBuilder.
 
-StanH — for the lyn tool used by the FE-CLib build pipeline.
+- StanH - for the lyn tool used by the FE-CLib build pipeline.
 
-Cam — who conversation kick started the whole project
+- Cam - whose conversation kick started the whole project
 
 # AI Disclosure
 
